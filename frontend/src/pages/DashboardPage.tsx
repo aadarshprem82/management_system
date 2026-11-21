@@ -83,6 +83,11 @@ export default function DashboardPage() {
                             Exams &amp; Assignments
                         </Button>
                     )}
+                    {profile && ['admin', 'student'].includes(profile.role) && (
+                        <Button variant="contained" color="warning" component={RouterLink} to="/fees" sx={{ mr: 2 }}>
+                            Fees
+                        </Button>
+                    )}
                 </Box>
             </Container>
         </>
