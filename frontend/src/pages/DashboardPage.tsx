@@ -10,6 +10,7 @@ import {
     Typography,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import { Link as RouterLink } from 'react-router-dom';
 
 export default function DashboardPage() {
     const { profile, session, signOut } = useAuth();
@@ -28,6 +29,11 @@ export default function DashboardPage() {
         <>
             <AppBar position="static">
                 <Toolbar>
+                    {profile?.role === 'admin' && (
+                        <Button variant="contained" component={RouterLink} to="/academics" sx={{ mr: 2 }}>
+                            Manage Academics
+                        </Button>
+                    )}
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         School Management System
                     </Typography>

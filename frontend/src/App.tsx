@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CssBaseline, Typography, } from '@mui/material';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import {CssBaseline,Typography,} from '@mui/material';
+import AcademicsPage from './pages/AcademicsPage';
 
 interface HealthResponse {
   status: string;
@@ -47,6 +49,14 @@ export default function App() {
             element={<Typography sx={{ p: 4 }}>403 — You do not have permission to view this page.</Typography>}
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/academics"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AcademicsPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

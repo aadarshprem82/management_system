@@ -48,7 +48,7 @@ def get_current_user( credentials: HTTPAuthorizationCredentials = Depends(securi
         )
 
 
-def required_roles(allowed_roles: List[str]):
+def require_roles(allowed_roles: List[str]):
     def role_checker(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         if current_user.role not in allowed_roles:
             raise HTTPException(

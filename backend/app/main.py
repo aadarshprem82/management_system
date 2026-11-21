@@ -2,9 +2,11 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.supabase import supabase_admin
-from app.core.auth import CurrentUser, get_current_user, required_roles
+from app.core.auth import CurrentUser, get_current_user, require_roles
+from app.routers import academics
 
 app = FastAPI(title="Management System API", version="0.1.0")
+app.include_router(academics.router)
 
 allowed_origins = list({
     settings.frontend_url,
@@ -40,7 +42,7 @@ def read_current_user(current_user:CurrentUser = Depends(get_current_user)):
 
 
 @app.get("/api/v1/admin/ping")
-def admin_only_ping(current_user: CurrentUser = Depends(required_roles(["admin"]))):
+def admin_only_ping(current_user: CurrentUser = Depends(require_roles(["admin"]))):
     return {
         "message": f"Hello Admin {current_user.full_name}!",
         "school_id": current_user.school_id,
