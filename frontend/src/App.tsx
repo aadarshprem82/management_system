@@ -1,0 +1,109 @@
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { CssBaseline, Typography, } from '@mui/material';
+
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import AcademicsPage from './pages/AcademicsPage';
+import UsersPage from './pages/UsersPage';
+import AttendancePage from './pages/AttendancePage';
+import AssessmentsPage from './pages/AssessmentsPage';
+import FeesPage from './pages/FeesPage';
+import NoticesPage from './pages/NoticesPage';
+
+interface HealthResponse {
+  status: string;
+  database: string;
+  sample_school: { id: string; name: string; code: string } | null;
+}
+
+export default function App() {
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/healthz`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data: HealthResponse) => setHealth(data))
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <AuthProvider>
+      <CssBaseline />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/unauthorized"
+            element={<Typography sx={{ p: 4 }}>403 — You do not have permission to view this page.</Typography>}
+          />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/academics"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AcademicsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+                <AttendancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessments"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+                <AssessmentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fees"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'student']}>
+                <FeesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notices"
+            element={
+              <ProtectedRoute>
+                <NoticesPage />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
