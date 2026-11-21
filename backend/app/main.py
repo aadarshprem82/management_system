@@ -3,10 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.supabase import supabase_admin
 from app.core.auth import CurrentUser, get_current_user, require_roles
-from app.routers import academics
+from app.routers import academics, assessments, attendance, users 
 
 app = FastAPI(title="Management System API", version="0.1.0")
 app.include_router(academics.router)
+app.include_router(users.router)
+app.include_router(attendance.router)
+app.include_router(assessments.router)
 
 allowed_origins = list({
     settings.frontend_url,

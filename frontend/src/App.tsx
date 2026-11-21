@@ -7,6 +7,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AcademicsPage from './pages/AcademicsPage';
+import UsersPage from './pages/UsersPage';
+import AttendancePage from './pages/AttendancePage';
+import AssessmentsPage from './pages/AssessmentsPage';
 
 interface HealthResponse {
   status: string;
@@ -54,6 +57,30 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AcademicsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+                <AttendancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/assessments"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+                <AssessmentsPage />
               </ProtectedRoute>
             }
           />

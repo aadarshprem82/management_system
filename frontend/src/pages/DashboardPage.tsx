@@ -29,11 +29,6 @@ export default function DashboardPage() {
         <>
             <AppBar position="static">
                 <Toolbar>
-                    {profile?.role === 'admin' && (
-                        <Button variant="contained" component={RouterLink} to="/academics" sx={{ mr: 2 }}>
-                            Manage Academics
-                        </Button>
-                    )}
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
                         School Management System
                     </Typography>
@@ -65,6 +60,28 @@ export default function DashboardPage() {
                         <Alert severity="info" sx={{ mt: 2 }}>
                             {pingResult}
                         </Alert>
+                    )}
+                </Box>
+                <Box sx={{ mt: 3 }}>
+                    {profile?.role === 'admin' && (
+                        <Button variant="contained" component={RouterLink} to="/academics" sx={{ mr: 2 }}>
+                            Manage Academics
+                        </Button>
+                    )}
+                    {profile?.role === 'admin' && (
+                        <Button variant="contained" component={RouterLink} to="/users" sx={{ mr: 2 }}>
+                            Manage Users &amp; Enrollments
+                        </Button>
+                    )}
+                    {profile && ['admin', 'teacher', 'student'].includes(profile.role) && (
+                        <Button variant="contained" color="secondary" component={RouterLink} to="/attendance" sx={{ mr: 2 }}>
+                            Attendance
+                        </Button>
+                    )}
+                    {profile && ['admin', 'teacher', 'student'].includes(profile.role) && (
+                        <Button variant="contained" color="success" component={RouterLink} to="/assessments" sx={{ mr: 2 }}>
+                            Exams &amp; Assignments
+                        </Button>
                     )}
                 </Box>
             </Container>
