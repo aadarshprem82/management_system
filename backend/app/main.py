@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.supabase import supabase_admin
+from app.core.auth import CurrentUser, get_current_user, required_roles
 
 app = FastAPI(title="Management System API", version="0.1.0")
 
@@ -32,3 +33,15 @@ def health_check():
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Supabase connection failed: {exc}")
+
+@app.get("/api/v1/me", response_model=CurrentUser)
+def read_current_user(current_user:CurrentUser = Depends(get_current_user)):
+    return current_user
+
+
+@app.get("/api/v1/admin/ping")
+def admin_only_ping(current_user: CurrentUser = Depends(required_roles(["admin"]))):
+    return {
+        "message": f"Hello Admin {current_user.full_name}!",
+        "school_id": current_user.school_id,
+    }

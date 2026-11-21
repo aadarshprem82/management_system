@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  Container,
-  CssBaseline,
-  Typography,
-} from '@mui/material';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import {CssBaseline,Typography,} from '@mui/material';
 
 interface HealthResponse {
   status: string;
@@ -21,7 +17,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log("Before useEffect");
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/healthz`)
       .then((res) => {
@@ -34,43 +29,26 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <AuthProvider>
       <CssBaseline />
-      <Container maxWidth="sm" sx={{ mt: 8 }}>
-        <Card elevation={3}>
-          <CardContent>
-            <Typography variant='h5' gutterBottom>
-              Management System - Phase 1
-            </Typography>
-
-            {loading && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-                <CircularProgress size={20} />
-                <Typography>Checking FastAPI &amp; Supabase connection...</Typography>
-              </Box>
-            )}
-
-            {error && (
-              <Alert severity='error' sx={{ mt: 2 }}>
-                Connection failed: {error}
-              </Alert>
-            )}
-
-            {health && (
-              <Alert severity='success' sx={{ mt: 2 }}>
-                Backend: <strong>{health.status}</strong> | Database: {' '}
-                <strong>{health.database} </strong>
-                {health.sample_school && (
-                  <>
-                    <br />
-                    Active School: <strong>{health.sample_school.name} </strong> ({health.sample_school.code})
-                  </>
-                )}
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      </Container>
-    </>
-  )
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/unauthorized"
+            element={<Typography sx={{ p: 4 }}>403 — You do not have permission to view this page.</Typography>}
+          />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
