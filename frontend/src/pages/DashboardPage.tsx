@@ -88,6 +88,9 @@ export default function DashboardPage() {
                             Fees
                         </Button>
                     )}
+                    <Button variant="contained" color="info" component={RouterLink} to="/notices" sx={{ mr: 2 }}>
+                        Notice Board
+                    </Button>
                 </Box>
             </Container>
         </>

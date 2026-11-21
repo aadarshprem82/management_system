@@ -11,6 +11,7 @@ import UsersPage from './pages/UsersPage';
 import AttendancePage from './pages/AttendancePage';
 import AssessmentsPage from './pages/AssessmentsPage';
 import FeesPage from './pages/FeesPage';
+import NoticesPage from './pages/NoticesPage';
 
 interface HealthResponse {
   status: string;
@@ -90,6 +91,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['admin', 'student']}>
                 <FeesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notices"
+            element={
+              <ProtectedRoute>
+                <NoticesPage />
               </ProtectedRoute>
             }
           />
