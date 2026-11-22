@@ -21,6 +21,8 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
+import { formatDate } from '../lib/date';
+
 interface ClassItem {
     id: string;
     name: string;
@@ -241,7 +243,7 @@ export default function NoticesPage() {
                                             </Stack>
                                             <Typography variant="caption" color="text.secondary">
                                                 Posted by {n.author?.full_name || 'Staff'} •{' '}
-                                                {new Date(n.created_at).toLocaleString()}
+                                                {formatDate(n.created_at)}
                                             </Typography>
                                         </Box>
 

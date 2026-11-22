@@ -20,6 +20,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 
+import DateInput from '../components/DateInput';
+import { formatDate } from '../lib/date';
+
 interface AcademicYear {
     id: string;
     name: string;
@@ -196,22 +199,8 @@ export default function AcademicsPage() {
                                 <Typography variant="h6" gutterBottom>Add Academic Year</Typography>
                                 <Box component="form" onSubmit={handleAddYear} sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                                     <TextField label="Name (e.g. 2026-2027)" value={yearName} onChange={(e) => setYearName(e.target.value)} required />
-                                    <TextField
-                                        label="Start Date"
-                                        type="date"
-                                        slotProps={{ inputLabel: { shrink: true } }}
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        required
-                                    />
-                                    <TextField
-                                        label="End Date"
-                                        type="date"
-                                        slotProps={{ inputLabel: { shrink: true } }}
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        required
-                                    />
+                                    <DateInput label="Start Date" value={startDate} onChange={setStartDate} required />
+                                    <DateInput label="End Date" value={endDate} onChange={setEndDate} required />
                                     <Button type="submit" variant="contained">Add</Button>
                                 </Box>
                             </CardContent>
@@ -222,7 +211,7 @@ export default function AcademicsPage() {
                                     <Box>
                                         <Typography variant="subtitle1">{y.name}</Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            {y.start_date} to {y.end_date}
+                                            {formatDate(y.start_date)} to {formatDate(y.end_date)}
                                         </Typography>
                                     </Box>
                                     {y.is_current && <Chip label="Current" color="success" size="small" />}

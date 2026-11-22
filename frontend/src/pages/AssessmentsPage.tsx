@@ -29,6 +29,9 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
+import DateInput from '../components/DateInput';
+import { formatDate } from '../lib/date';
+
 interface AcademicYear { id: string; name: string }
 interface ClassItem { id: string; name: string; sections: { id: string; name: string }[] }
 interface SubjectItem { id: string; name: string; code: string }
@@ -324,8 +327,8 @@ export default function AssessmentsPage() {
                                         <TextField select label="Class" value={examClassId} onChange={(e) => setExamClassId(e.target.value)} required sx={{ minWidth: 150 }}>
                                             {classes.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                                         </TextField>
-                                        <TextField label="Start Date" type="date" value={examStart} onChange={(e) => setExamStart(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} required />
-                                        <TextField label="End Date" type="date" value={examEnd} onChange={(e) => setExamEnd(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} required />
+                                        <DateInput label="Start Date" value={examStart} onChange={setExamStart} required />
+                                        <DateInput label="End Date" value={examEnd} onChange={setExamEnd} required />
                                         <Button type="submit" variant="contained">Create</Button>
                                     </Box>
                                 </CardContent>
@@ -479,7 +482,7 @@ export default function AssessmentsPage() {
                                         <TextField select label="Subject" value={assignSubjectId} onChange={(e) => setAssignSubjectId(e.target.value)} required sx={{ minWidth: 160 }}>
                                             {subjects.map((sub) => <MenuItem key={sub.id} value={sub.id}>{sub.name}</MenuItem>)}
                                         </TextField>
-                                        <TextField label="Due Date" type="date" value={assignDueDate} onChange={(e) => setAssignDueDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} required />
+                                        <DateInput label="Due Date" value={assignDueDate} onChange={setAssignDueDate} required />
                                         <Button variant="outlined" component="label">
                                             {assignFile ? assignFile.name : 'Attach File'}
                                             <input type="file" hidden onChange={(e) => setAssignFile(e.target.files?.[0] ?? null)} />
@@ -496,7 +499,7 @@ export default function AssessmentsPage() {
                                     <Box>
                                         <Typography variant="subtitle1">{a.title}</Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            {a.class?.name} - Section {a.section?.name} | {a.subject?.name} | Due: {a.due_date}
+                                            {a.class?.name} - Section {a.section?.name} | {a.subject?.name} | Due: {formatDate(a.due_date)}
                                         </Typography>
                                         {a.description && <Typography variant="body2" sx={{ mt: 1 }}>{a.description}</Typography>}
                                         {a.file_url && (

@@ -27,6 +27,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 
+import DateInput from '../components/DateInput';
+import { formatDate } from '../lib/date';
+
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
 interface AcademicYear {
@@ -235,13 +238,7 @@ export default function AttendancePage() {
                                         ))}
                                     </TextField>
 
-                                    <TextField
-                                        label="Date"
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={(e) => setSelectedDate(e.target.value)}
-                                        slotProps={{ inputLabel: { shrink: true } }}
-                                    />
+                                    <DateInput label="Date" value={selectedDate} onChange={setSelectedDate} />
 
                                     <Button
                                         variant="contained"
@@ -342,7 +339,7 @@ export default function AttendancePage() {
                                         <TableBody>
                                             {summary.records.map((rec) => (
                                                 <TableRow key={rec.id}>
-                                                    <TableCell>{rec.date}</TableCell>
+                                                    <TableCell>{formatDate(rec.date)}</TableCell>
                                                     <TableCell>
                                                         <Chip label={rec.status.toUpperCase()} size="small" />
                                                     </TableCell>

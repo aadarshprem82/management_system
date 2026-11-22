@@ -27,6 +27,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
 
+import DateInput from '../components/DateInput';
+import { formatDate } from '../lib/date';
+
 interface AcademicYear { id: string; name: string }
 interface ClassItem { id: string; name: string }
 interface StudentItem { id: string; full_name: string; email: string }
@@ -195,7 +198,7 @@ export default function FeesPage() {
                                                 {classes.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
                                             </TextField>
                                             <TextField label="Amount" type="number" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} required sx={{ width: 130 }} />
-                                            <TextField label="Due Date" type="date" value={feeDueDate} onChange={(e) => setFeeDueDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} required />
+                                            <DateInput label="Due Date" value={feeDueDate} onChange={setFeeDueDate} required />
                                             <Button type="submit" variant="contained">Create</Button>
                                         </Box>
                                     </CardContent>
@@ -219,7 +222,7 @@ export default function FeesPage() {
                                                     <TableCell>{s.academic_year?.name}</TableCell>
                                                     <TableCell>{s.class?.name}</TableCell>
                                                     <TableCell>₹{s.amount}</TableCell>
-                                                    <TableCell>{s.due_date}</TableCell>
+                                                    <TableCell>{formatDate(s.due_date)}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -267,7 +270,7 @@ export default function FeesPage() {
                                             {payments.map((p) => (
                                                 <TableRow key={p.id}>
                                                     <TableCell><strong>{p.receipt_number}</strong></TableCell>
-                                                    <TableCell>{p.payment_date}</TableCell>
+                                                    <TableCell>{formatDate(p.payment_date)}</TableCell>
                                                     <TableCell>{p.student?.full_name}</TableCell>
                                                     <TableCell>{p.fee_structure?.name}</TableCell>
                                                     <TableCell>₹{p.amount_paid} / ₹{p.fee_structure?.amount}</TableCell>
