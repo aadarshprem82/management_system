@@ -57,7 +57,9 @@ interface FeePayment {
 export default function FeesPage() {
     const { session, profile } = useAuth();
     const token = session?.access_token ?? '';
-    const isAdmin = profile?.role === 'admin';
+    const isAdmin = Boolean(
+        profile && ['super_admin', 'admin', 'accountant'].includes(profile.role)
+    );
 
     const [tab, setTab] = useState(0);
     const [error, setError] = useState<string | null>(null);
@@ -86,13 +88,13 @@ export default function FeesPage() {
     const loadData = async () => {
         if (!token) return;
         try {
-            setError(null);
             const [st, pay] = await Promise.all([
                 apiFetch<FeeStructure[]>('/api/v1/fees/structures', token),
                 apiFetch<FeePayment[]>('/api/v1/fees/payments', token),
             ]);
             setStructures(st);
             setPayments(pay);
+            setError(null);
 
             if (isAdmin) {
                 const [y, c, stu] = await Promise.all([
@@ -110,7 +112,40 @@ export default function FeesPage() {
     };
 
     useEffect(() => {
-        loadData();
+        if (!token) return;
+        let cancelled = false;
+        const init = async () => {
+            try {
+                const [st, pay] = await Promise.all([
+                    apiFetch<FeeStructure[]>('/api/v1/fees/structures', token),
+                    apiFetch<FeePayment[]>('/api/v1/fees/payments', token),
+                ]);
+                if (cancelled) return;
+                setStructures(st);
+                setPayments(pay);
+                setError(null);
+
+                if (isAdmin) {
+                    const [y, c, stu] = await Promise.all([
+                        apiFetch<AcademicYear[]>('/api/v1/academics/academic-years', token),
+                        apiFetch<ClassItem[]>('/api/v1/academics/classes', token),
+                        apiFetch<StudentItem[]>('/api/v1/users?role=student', token),
+                    ]);
+                    if (cancelled) return;
+                    setYears(y);
+                    setClasses(c);
+                    setStudents(stu);
+                }
+            } catch (err: unknown) {
+                if (!cancelled) {
+                    setError(err instanceof Error ? err.message : 'Failed to load fee data');
+                }
+            }
+        };
+        void init();
+        return () => {
+            cancelled = true;
+        };
     }, [token, isAdmin]);
 
     const handleCreateStructure = async (e: SyntheticEvent<HTMLFormElement>) => {

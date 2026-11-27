@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react';
 import {
     Alert,
-    AppBar,
     Box,
     Button,
     Card,
     CardContent,
-    Chip,
     CircularProgress,
     Container,
     Stack,
-    Toolbar,
     Typography,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useConfig } from '../context/configContextDef';
 import { Link as RouterLink } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
+import AppHeader from '../components/AppHeader';
+import MfaDialog from '../components/iam/MfaDialog';
 
 interface DashboardMetrics {
     role: string;
@@ -48,18 +47,19 @@ function MetricCard({ label, value }: { label: string; value: string | number })
 }
 
 export default function DashboardPage() {
-    const { profile, session, signOut } = useAuth();
+    const { profile, session, needsMfaChallenge } = useAuth();
     const { organization, isModuleEnabled } = useConfig();
     const token = session?.access_token ?? '';
     const analyticsEnabled = isModuleEnabled('analytics');
     const currencySymbol = organization?.currency_symbol ?? '₹';
 
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-    const [loading, setLoading] = useState(analyticsEnabled);
+    const [loading, setLoading] = useState(analyticsEnabled && !needsMfaChallenge);
     const [error, setError] = useState<string | null>(null);
+    const [mfaOpen, setMfaOpen] = useState(false);
 
     useEffect(() => {
-        if (!token || !analyticsEnabled) return;
+        if (!token || !analyticsEnabled || needsMfaChallenge) return;
         let cancelled = false;
         const loadMetrics = async () => {
             try {
@@ -82,28 +82,22 @@ export default function DashboardPage() {
         return () => {
             cancelled = true;
         };
-    }, [token, analyticsEnabled]);
+    }, [token, analyticsEnabled, needsMfaChallenge]);
 
-    const isStaff = profile?.role === 'admin' || profile?.role === 'teacher';
+    const isStaff =
+        profile?.role === 'super_admin' ||
+        profile?.role === 'admin' ||
+        profile?.role === 'principal' ||
+        profile?.role === 'teacher' ||
+        profile?.role === 'accountant' ||
+        profile?.role === 'auditor' ||
+        profile?.role === 'admissions_officer';
+    const isAdminLike = profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'principal';
+    const isFinanceLike = isAdminLike || profile?.role === 'accountant' || profile?.role === 'auditor';
 
     return (
         <>
-            <AppBar position="static" sx={{ bgcolor: organization?.primary_color || undefined }}>
-                <Toolbar>
-                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                        {organization?.name || 'School Management System'}
-                    </Typography>
-                    <Chip
-                        label={profile?.role.toUpperCase()}
-                        color="secondary"
-                        size="small"
-                        sx={{ mr: 2 }}
-                    />
-                    <Button color="inherit" onClick={signOut}>
-                        Logout
-                    </Button>
-                </Toolbar>
-            </AppBar>
+            <AppHeader />
 
             <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
                 <Typography variant="h4" gutterBottom>
@@ -114,9 +108,24 @@ export default function DashboardPage() {
                     {organization?.tagline ? ` · ${organization.tagline}` : ''}
                 </Typography>
 
+                {needsMfaChallenge && (
+                    <Alert
+                        severity="warning"
+                        sx={{ mb: 3 }}
+                        action={
+                            <Button color="inherit" size="small" onClick={() => setMfaOpen(true)}>
+                                Verify MFA
+                            </Button>
+                        }
+                    >
+                        Your active role (<strong>{profile?.role}</strong>) requires MFA (AAL2) verification to access
+                        privileged and financial APIs.
+                    </Alert>
+                )}
+
                 {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-                {analyticsEnabled && (
+                {analyticsEnabled && !needsMfaChallenge && (
                     loading ? (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 4 }}>
                             <CircularProgress size={22} />
@@ -154,7 +163,7 @@ export default function DashboardPage() {
                                                 }
                                             />
                                         )}
-                                        {profile?.role === 'admin' && isModuleEnabled('fees') && (
+                                        {isFinanceLike && isModuleEnabled('fees') && (
                                             <MetricCard
                                                 label="Fees Collected"
                                                 value={`${currencySymbol}${metrics.total_fees_collected ?? 0}`}
@@ -192,7 +201,7 @@ export default function DashboardPage() {
                     Quick Actions
                 </Typography>
                 <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 1.5 }}>
-                    {profile?.role === 'admin' && (
+                    {isAdminLike && (
                         <>
                             {isModuleEnabled('academics') && (
                                 <Button variant="contained" component={RouterLink} to="/academics">
@@ -204,12 +213,15 @@ export default function DashboardPage() {
                                     Users &amp; Enrollments
                                 </Button>
                             )}
+                            <Button variant="outlined" component={RouterLink} to="/iam">
+                                IAM, MFA &amp; Approvals
+                            </Button>
                             <Button variant="outlined" component={RouterLink} to="/settings">
                                 Settings &amp; Campus Setup
                             </Button>
                         </>
                     )}
-                    {profile && ['admin', 'teacher', 'student'].includes(profile.role) && (
+                    {profile && ['super_admin', 'admin', 'principal', 'teacher', 'student'].includes(profile.role) && (
                         <>
                             {isModuleEnabled('attendance') && (
                                 <Button variant="contained" color="secondary" component={RouterLink} to="/attendance">
@@ -223,7 +235,7 @@ export default function DashboardPage() {
                             )}
                         </>
                     )}
-                    {profile && ['admin', 'student'].includes(profile.role) && isModuleEnabled('fees') && (
+                    {profile && ['super_admin', 'admin', 'accountant', 'auditor', 'student'].includes(profile.role) && isModuleEnabled('fees') && (
                         <Button variant="contained" color="warning" component={RouterLink} to="/fees">
                             Fees
                         </Button>
@@ -235,6 +247,7 @@ export default function DashboardPage() {
                     )}
                 </Stack>
             </Container>
+            <MfaDialog open={mfaOpen} onClose={() => setMfaOpen(false)} required={needsMfaChallenge} />
         </>
     );
 }

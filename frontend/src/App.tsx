@@ -13,6 +13,7 @@ import AssessmentsPage from './pages/AssessmentsPage';
 import FeesPage from './pages/FeesPage';
 import NoticesPage from './pages/NoticesPage';
 import SettingsPage from './pages/SettingsPage';
+import IamPage from './pages/IamPage';
 
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -73,7 +74,7 @@ export default function App() {
               <Route
                 path="/fees"
                 element={
-                  <ProtectedRoute allowedRoles={['admin', 'student']} moduleKey="fees">
+                  <ProtectedRoute allowedRoles={['admin', 'accountant', 'auditor', 'student']} moduleKey="fees">
                     <FeesPage />
                   </ProtectedRoute>
                 }
@@ -89,8 +90,16 @@ export default function App() {
               <Route
                 path="/settings"
                 element={
-                  <ProtectedRoute allowedRoles={['admin']}>
+                  <ProtectedRoute allowedRoles={['admin', 'principal']} requireMfa>
                     <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/iam"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'principal', 'auditor']} requireMfa>
+                    <IamPage />
                   </ProtectedRoute>
                 }
               />

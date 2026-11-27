@@ -135,7 +135,8 @@ async def _resolve_user_for_middleware(request: Request) -> Optional[CurrentUser
     """Resolves CurrentUser from FastAPI dependency override (tests) or Bearer token."""
     override = request.app.dependency_overrides.get(get_current_user)
     if override is not None:
-        result = override()
+        sig = inspect.signature(override)
+        result = override(request) if "request" in sig.parameters else override()
         if inspect.isawaitable(result):
             result = await result
         return result

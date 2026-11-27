@@ -18,7 +18,15 @@ def get_dashboard_analytics(user: CurrentUser = Depends(get_current_user)):
     )
     total_notices = notices_res.count or 0
 
-    if user.role in ("admin", "teacher"):
+    if user.role in (
+        "super_admin",
+        "admin",
+        "principal",
+        "teacher",
+        "accountant",
+        "auditor",
+        "admissions_officer",
+    ):
         students_res = (
             supabase_admin.table("profiles")
             .select("id", count="exact")
@@ -62,7 +70,7 @@ def get_dashboard_analytics(user: CurrentUser = Depends(get_current_user)):
             "total_notices": total_notices,
         }
 
-        if user.role == "admin":
+        if user.role in ("super_admin", "admin", "principal", "accountant", "auditor"):
             payments_res = (
                 supabase_admin.table("fee_payments")
                 .select("amount_paid")

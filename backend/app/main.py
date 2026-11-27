@@ -4,10 +4,11 @@ from app.core.config import settings
 from app.core.supabase import supabase_admin
 from app.core.auth import CurrentUser, get_current_user, require_roles
 from app.core.feature_flags import FeatureFlagMiddleware
-from app.routers import academics, analytics, assessments, attendance, config, fees, notices, users 
+from app.routers import academics, analytics, assessments, attendance, config, fees, iam, notices, users 
 
 app = FastAPI(title="Management System API", version="0.1.0")
 app.include_router(config.router)
+app.include_router(iam.router)
 app.include_router(academics.router)
 app.include_router(users.router)
 app.include_router(attendance.router)

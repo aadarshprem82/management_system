@@ -12,7 +12,20 @@ class UserCreate(BaseModel):
     full_name: str
     email: EmailStr
     password: str
-    role: Literal["admin", "teacher", "student", "parent"]
+    role: Literal[
+        "super_admin",
+        "admin",
+        "principal",
+        "admissions_officer",
+        "accountant",
+        "librarian",
+        "transport_manager",
+        "nurse",
+        "auditor",
+        "teacher",
+        "student",
+        "parent",
+    ]
     phone: Optional[str] = None
     campus_id: Optional[str] = None
 
@@ -72,6 +85,20 @@ def create_user(
         if payload.campus_id:
             profile_data["campus_id"] = payload.campus_id
         profile_res = supabase_admin.table("profiles").insert(profile_data).execute()
+        try:
+            supabase_admin.table("user_roles").insert(
+                {
+                    "school_id": user.school_id,
+                    "user_id": auth_user_id,
+                    "role": payload.role,
+                    "campus_id": payload.campus_id,
+                    "is_primary": True,
+                    "is_active": True,
+                    "assigned_by": user.id,
+                }
+            ).execute()
+        except Exception:
+            pass
         return profile_res.data[0]
     except Exception as exc:        
         if auth_user_id:

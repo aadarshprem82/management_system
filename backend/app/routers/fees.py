@@ -3,7 +3,7 @@ from typing import Optional
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from app.core.auth import CurrentUser, get_current_user, require_roles
+from app.core.auth import CurrentUser, get_current_user, require_dual_control, require_roles
 from app.core.sequences import generate_sequence_number
 from app.core.supabase import supabase_admin
 
@@ -47,7 +47,7 @@ def list_fee_structures(user: CurrentUser = Depends(get_current_user)):
 @router.post("/structures", status_code=201)
 def create_fee_structure(
     payload: FeeStructureCreate,
-    user: CurrentUser = Depends(require_roles(["admin"])),
+    user: CurrentUser = Depends(require_roles(["admin", "accountant"])),
 ):
     try:
         data = {
@@ -62,7 +62,7 @@ def create_fee_structure(
 
 # --- Fee Payments ---
 @router.get("/payments")
-def list_fee_payments(user: CurrentUser = Depends(get_current_user)):
+def list_fee_payments(user: CurrentUser = Depends(require_roles(["admin", "accountant", "auditor", "student"]))):
     query = (
         supabase_admin.table("fee_payments")
         .select(
@@ -75,8 +75,6 @@ def list_fee_payments(user: CurrentUser = Depends(get_current_user)):
     )
     if user.role == "student":
         query = query.eq("student_id", user.id)
-    elif user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized to view fee payments")
 
     return query.execute().data
 
@@ -84,7 +82,7 @@ def list_fee_payments(user: CurrentUser = Depends(get_current_user)):
 @router.post("/payments", status_code=201)
 def record_fee_payment(
     payload: FeePaymentCreate,
-    user: CurrentUser = Depends(require_roles(["admin"])),
+    user: CurrentUser = Depends(require_roles(["admin", "accountant"])),
 ):
     # Look up fee structure amount to determine paid vs partial status
     structure_res = (
@@ -153,3 +151,32 @@ def record_fee_payment(
         return res.data[0]
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/payments/{payment_id}/void")
+def void_fee_payment(
+    payment_id: str,
+    user: CurrentUser = Depends(require_roles(["admin", "accountant"])),
+    approval: dict = Depends(require_dual_control("fee_payment_void")),
+):
+    """High-risk finance operation requiring MFA (aal2) and dual-control approval."""
+    res = (
+        supabase_admin.table("fee_payments")
+        .select("id, status")
+        .eq("id", payment_id)
+        .eq("school_id", user.school_id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Fee payment not found")
+
+    supabase_admin.table("approval_requests").update({"status": "executed"}).eq(
+        "id", approval["id"]
+    ).eq("school_id", user.school_id).execute()
+
+    return {
+        "voided": True,
+        "payment_id": payment_id,
+        "approval_id": approval["id"],
+        "voided_by": user.id,
+    }
