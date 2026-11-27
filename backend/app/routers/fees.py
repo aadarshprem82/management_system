@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from app.core.auth import CurrentUser, get_current_user, require_roles
+from app.core.sequences import generate_sequence_number
 from app.core.supabase import supabase_admin
 
 router = APIRouter(prefix="/api/v1/fees", tags=["Fees & Payments"])
@@ -12,9 +13,12 @@ router = APIRouter(prefix="/api/v1/fees", tags=["Fees & Payments"])
 class FeeStructureCreate(BaseModel):
     academic_year_id: str
     class_id: str
+    campus_id: Optional[str] = None
     name: str
     amount: float = Field(gt=0)
     due_date: date
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
 
 
 class FeePaymentCreate(BaseModel):
@@ -23,6 +27,8 @@ class FeePaymentCreate(BaseModel):
     amount_paid: float = Field(gt=0)
     payment_date: Optional[date] = None
     remarks: Optional[str] = None
+    campus_id: Optional[str] = None
+    generate_invoice: bool = False
 
 
 # --- Fee Structures ---
@@ -44,7 +50,10 @@ def create_fee_structure(
     user: CurrentUser = Depends(require_roles(["admin"])),
 ):
     try:
-        data = {**payload.model_dump(mode="json"), "school_id": user.school_id}
+        data = {
+            **payload.model_dump(mode="json", exclude_none=True),
+            "school_id": user.school_id,
+        }
         res = supabase_admin.table("fee_structures").insert(data).execute()
         return res.data[0]
     except Exception as exc:
@@ -80,7 +89,7 @@ def record_fee_payment(
     # Look up fee structure amount to determine paid vs partial status
     structure_res = (
         supabase_admin.table("fee_structures")
-        .select("id, amount")
+        .select("id, amount, campus_id, academic_year_id")
         .eq("id", payload.fee_structure_id)
         .eq("school_id", user.school_id)
         .single()
@@ -92,7 +101,37 @@ def record_fee_payment(
     expected_amount = float(structure_res.data["amount"])
     status_val = "paid" if payload.amount_paid >= expected_amount else "partial"
     pay_date = payload.payment_date or date.today()
-    receipt_no = f"RCPT-{pay_date.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+    campus_id = payload.campus_id or structure_res.data.get("campus_id")
+    academic_year_id = structure_res.data.get("academic_year_id")
+
+    try:
+        seq_res = generate_sequence_number(
+            school_id=user.school_id,
+            sequence_type="receipt",
+            campus_id=campus_id,
+            academic_year_id=academic_year_id,
+            as_of_date=pay_date,
+        )
+        receipt_no = seq_res["formatted_number"]
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        receipt_no = f"RCPT-{pay_date.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+
+    invoice_no: Optional[str] = None
+    if payload.generate_invoice:
+        try:
+            inv_res = generate_sequence_number(
+                school_id=user.school_id,
+                sequence_type="invoice",
+                campus_id=campus_id,
+                academic_year_id=academic_year_id,
+                as_of_date=pay_date,
+            )
+            invoice_no = inv_res["formatted_number"]
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
 
     try:
         data = {
@@ -106,6 +145,10 @@ def record_fee_payment(
             "remarks": payload.remarks,
             "recorded_by": user.id,
         }
+        if campus_id:
+            data["campus_id"] = campus_id
+        if invoice_no:
+            data["invoice_number"] = invoice_no
         res = supabase_admin.table("fee_payments").insert(data).execute()
         return res.data[0]
     except Exception as exc:

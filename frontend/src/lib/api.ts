@@ -14,9 +14,17 @@ export async function apiFetch<T>(
     },
   });
 
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.detail || `Request failed (${res.status})`);
+    const detail =
+      typeof data.detail === 'string'
+        ? data.detail
+        : data.detail?.message || `Request failed (${res.status})`;
+    throw new Error(detail);
   }
   return data as T;
 }

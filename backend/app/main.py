@@ -3,9 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.supabase import supabase_admin
 from app.core.auth import CurrentUser, get_current_user, require_roles
-from app.routers import academics, analytics, assessments, attendance, fees, notices, users 
+from app.core.feature_flags import FeatureFlagMiddleware
+from app.routers import academics, analytics, assessments, attendance, config, fees, notices, users 
 
 app = FastAPI(title="Management System API", version="0.1.0")
+app.include_router(config.router)
 app.include_router(academics.router)
 app.include_router(users.router)
 app.include_router(attendance.router)
@@ -20,7 +22,9 @@ allowed_origins = list({
     "http://127.0.0.1:5173",
 })
 
-
+# Starlette applies middleware in reverse order of add_middleware calls,
+# so FeatureFlagMiddleware is added before CORSMiddleware to keep CORS outermost.
+app.add_middleware(FeatureFlagMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

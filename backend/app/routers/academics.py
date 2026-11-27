@@ -13,21 +13,33 @@ class AcademicYearCreate(BaseModel):
     start_date: date
     end_date: date
     is_current: bool = False
+    campus_id: Optional[str] = None
 
 
 class ClassCreate(BaseModel):
     name: str
     numeric_level: Optional[int] = None
+    campus_id: Optional[str] = None
+    stream_id: Optional[str] = None
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
 
 
 class SectionCreate(BaseModel):
     class_id: str
     name: str
+    campus_id: Optional[str] = None
+    room_id: Optional[str] = None
+    max_capacity: Optional[int] = None
 
 
 class SubjectCreate(BaseModel):
     name: str
     code: str
+    campus_id: Optional[str] = None
+    stream_id: Optional[str] = None
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
 
 
 @router.get("/academic-years")
@@ -49,7 +61,7 @@ def create_academic_year(
 ):
     try:
         data = {
-            **payload.model_dump(mode="json"),
+            **payload.model_dump(mode="json", exclude_none=True),
             "school_id": user.school_id,
         }
         res = supabase_admin.table("academic_years").insert(data).execute()
@@ -76,7 +88,7 @@ def create_class(
     user: CurrentUser = Depends(require_roles(["admin"])),
 ):
     try:
-        data = {**payload.model_dump(), "school_id": user.school_id}
+        data = {**payload.model_dump(mode="json", exclude_none=True), "school_id": user.school_id}
         res = supabase_admin.table("classes").insert(data).execute()
         return res.data[0]
     except Exception as exc:
@@ -89,7 +101,7 @@ def create_section(
     user: CurrentUser = Depends(require_roles(["admin"])),
 ):
     try:
-        data = {**payload.model_dump(), "school_id": user.school_id}
+        data = {**payload.model_dump(mode="json", exclude_none=True), "school_id": user.school_id}
         res = supabase_admin.table("sections").insert(data).execute()
         return res.data[0]
     except Exception as exc:
@@ -114,7 +126,7 @@ def create_subject(
     user: CurrentUser = Depends(require_roles(["admin"])),
 ):
     try:
-        data = {**payload.model_dump(), "school_id": user.school_id}
+        data = {**payload.model_dump(mode="json", exclude_none=True), "school_id": user.school_id}
         res = supabase_admin.table("subjects").insert(data).execute()
         return res.data[0]
     except Exception as exc:

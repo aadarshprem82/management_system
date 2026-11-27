@@ -2,6 +2,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr
 from app.core.auth import CurrentUser, get_current_user, require_roles
+from app.core.sequences import generate_sequence_number
 from app.core.supabase import supabase_admin
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users & Enrollments"])
@@ -13,6 +14,7 @@ class UserCreate(BaseModel):
     password: str
     role: Literal["admin", "teacher", "student", "parent"]
     phone: Optional[str] = None
+    campus_id: Optional[str] = None
 
 
 class EnrollmentCreate(BaseModel):
@@ -21,6 +23,10 @@ class EnrollmentCreate(BaseModel):
     class_id: str
     section_id: str
     roll_number: Optional[str] = None
+    campus_id: Optional[str] = None
+    stream_id: Optional[str] = None
+    house_id: Optional[str] = None
+    admission_number: Optional[str] = None
 
 
 @router.get("")
@@ -63,6 +69,8 @@ def create_user(
             "email": payload.email,
             "phone": payload.phone,
         }
+        if payload.campus_id:
+            profile_data["campus_id"] = payload.campus_id
         profile_res = supabase_admin.table("profiles").insert(profile_data).execute()
         return profile_res.data[0]
     except Exception as exc:        
@@ -96,8 +104,22 @@ def create_enrollment(
     payload: EnrollmentCreate,
     user: CurrentUser = Depends(require_roles(["admin"])),
 ):
+    data = {**payload.model_dump(exclude_none=True), "school_id": user.school_id}
+
+    if not data.get("admission_number"):
+        try:
+            seq_res = generate_sequence_number(
+                school_id=user.school_id,
+                sequence_type="admission",
+                campus_id=payload.campus_id,
+                academic_year_id=payload.academic_year_id,
+            )
+            data["admission_number"] = seq_res["formatted_number"]
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+
     try:
-        data = {**payload.model_dump(), "school_id": user.school_id}
         res = supabase_admin.table("enrollments").insert(data).execute()
         return res.data[0]
     except Exception as exc:
